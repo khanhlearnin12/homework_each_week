@@ -1,0 +1,263 @@
+#include<stdio.h>
+#include<stdlib.h>
+
+#define MAX 100
+
+typedef enum {op, val} mytype ;
+
+struct data
+{
+ mytype type ;
+ int value ;
+ char oper ;
+ int priority;
+};
+struct SplitData
+{
+ data item[MAX];
+ data postitem[MAX] ;
+ int count;
+ int postcount;
+ void Split(void);
+ void ShowInfix(void);
+ void InfixToPost(void);
+ void ShowPostfix(void);
+ void PostToResult(void);
+};
+struct MyStack
+{
+ data a[MAX] ;
+ int top ;
+ bool IsEmpty() ;
+ bool IsFull() ;
+ void Push(data da) ;
+ data Pop() ;
+ data Top() ;
+ 
+ MyStack()
+ {
+  top=-1;
+ }
+};
+//=Stack Begin=================================
+bool MyStack::IsEmpty()
+{
+ if(top == -1)
+  return true ;
+ else
+  return false ;
+}
+//=============================================
+bool MyStack::IsFull()
+{
+ if(top == MAX - 1)
+  return true ;
+ else
+  return false ;
+}
+//=============================================
+void MyStack::Push(data da)
+{
+ if(IsFull())
+ {
+  printf("The STACK is full") ;
+  exit(1);
+ }
+ else
+  a[++top] = da ;
+}
+//=============================================
+data MyStack::Pop()
+{
+ if(IsEmpty())
+ {
+  printf("The STACK is empty") ;
+  exit(1);
+ } 
+ else
+  return a[top--] ;
+}
+//=============================================
+data MyStack::Top()
+{
+ if(IsEmpty())
+ {
+  printf("The STACK is empty--top") ;
+  exit(1);
+ }  
+ else
+  return a[top] ;
+}
+//=Stack End=================================
+
+int main()
+{
+ SplitData str;
+ str.Split();
+ return 0;
+}
+//============================================ 
+void SplitData::Split()
+{
+ FILE *fptr = fopen("1121hw.txt", "r");
+ if (fptr == NULL) {
+  printf("Error opening file\n");
+  exit(1);
+ }
+
+ char line[MAX];
+ 
+ // Process each line in the file
+ while (fgets(line, MAX, fptr) != NULL) {
+  count = 0;  // Reset count for each new line
+  int i = 0;
+  
+  while (line[i] != '\0' && line[i] != '\n') {
+   if (line[i] == ' ' || line[i] == '\t') {
+    i++;
+    continue;
+   }
+
+  //  extracting number
+   
+   if (line[i] >= '0' && line[i] <= '9') {
+    int num = 0;
+    while (line[i] >= '0' && line[i] <= '9') {
+     num = num * 10 + (line[i] - '0'); //convert sentence to interger 
+     i++;
+    }
+    item[count].type = val;
+    item[count].value = num;
+    count++;
+    continue;
+   }
+   
+// identify operation and parentness
+
+   if (line[i] == '+' || line[i] == '-' || 
+    line[i] == '*' || line[i] == '/' || 
+    line[i] == '(' || line[i] == ')') {
+    item[count].type = op;
+    item[count].oper = line[i];
+    
+// assign priority for operation and parentness
+
+    if (line[i] == '(' || line[i] == ')')
+     item[count].priority = 0;
+    else if (line[i] == '+' || line[i] == '-')
+     item[count].priority = 1;
+    else
+     item[count].priority = 2;
+    
+    count++;
+   }
+   i++;
+  }
+  
+  // Process this line's expression
+  InfixToPost();
+  ShowPostfix();
+  PostToResult();
+ }
+ 
+ fclose(fptr);
+}
+
+//============================================
+void SplitData::ShowInfix()
+{
+ for(int i=0;i<count;i++)
+ {
+  if(item[i].type==val)
+   printf("%d",item[i].value);
+  else
+   printf("%c",item[i].oper);
+ }
+ printf("\n"); 
+ 
+}
+//============================================
+void SplitData::InfixToPost()
+{
+ MyStack s;
+ postcount = 0;
+ 
+ for (int i = 0; i < count; i++) {
+  if (item[i].type == val) {
+   postitem[postcount++] = item[i];
+  }
+  else {
+   if (item[i].oper == '(') {
+    s.Push(item[i]);
+   }
+   else if (item[i].oper == ')') {
+    while (!s.IsEmpty() && s.Top().oper != '(') {
+     postitem[postcount++] = s.Pop();
+    }
+    if (!s.IsEmpty()) {
+     s.Pop(); 
+    }
+   }
+   else {
+    while (!s.IsEmpty() && s.Top().oper != '(' && 
+        item[i].priority <= s.Top().priority) {
+     postitem[postcount++] = s.Pop();
+    }
+    s.Push(item[i]);
+   }
+  }
+ }
+ 
+ while (!s.IsEmpty()) {
+  if (s.Top().oper != '(') {
+   postitem[postcount++] = s.Pop();
+  }
+  else {
+   s.Pop();
+  }
+ }
+}
+//============================================
+void SplitData::ShowPostfix()
+{
+ for(int i = 0; i < postcount; i++) {
+  if(postitem[i].type == val)
+   printf("%d", postitem[i].value);
+  else
+   printf("%c", postitem[i].oper);
+ }
+ printf(" "); // Single space before "result"
+}
+//===========================================
+void SplitData::PostToResult()
+{
+ MyStack s;
+ data a1, a2;
+ data c;
+ c.type = val;
+ 
+ for(int i = 0; i < postcount; i++) {
+  if(postitem[i].type == val) {
+   s.Push(postitem[i]);        
+  }
+  else {
+   a1 = s.Pop();
+   a2 = s.Pop();
+   if(postitem[i].oper == '+')                
+    c.value = a2.value + a1.value;
+   else if(postitem[i].oper == '-')
+    c.value = a2.value - a1.value;
+   else if(postitem[i].oper == '*')
+    c.value = a2.value * a1.value;
+   else if(postitem[i].oper == '/') {
+    if(a1.value == 0) {
+     printf("Error: Division by zero\n");
+     exit(1);
+    }
+    c.value = a2.value / a1.value;
+   }
+   s.Push(c);
+  }
+ }
+ printf("result : %d\n", s.Top().value);
+}
